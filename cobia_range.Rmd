@@ -9,6 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+# Install packages one by one
+```
+
 
 ```{r}
 # Load packages and read files
@@ -93,6 +97,16 @@ files <- load_layers(c("BO_sstmean", "BO_dissox", "MS_biogeo08_sss_mean_5m"))
 predictors <- stack(files)
 
 ```
+```{r}
+
+# Before running maxent using the 'dismo' package:
+# - download maxent program from http://www.cs.princeton.edu/~schapire/maxent/
+# -  Put the file ’maxent.jar’ in the ’java’ folder of the ’dismo’ package. That is the folder returned by system.file("java", package="dismo")
+
+```
+
+
+
 
 ```{r}
 # Run Maxent
