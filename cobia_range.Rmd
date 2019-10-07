@@ -1,0 +1,111 @@
+---
+title: "cobia-range"
+author: "Anna Calle"
+date: "10/2/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Load packages and read files
+library(tidyverse)
+library(sf)
+library(raster)
+library(rgdal)
+library(dplyr)
+library(rgeos)
+library(scales)
+library(fasterize)
+library(dismo)
+library(rJava)
+library(maptools)
+library(sdmpredictors) 
+
+cobia <- read_csv("cobia_occurrences_BR.csv")
+
+
+```
+
+
+
+```{r}
+# set up projection parameter for use throughout script
+projection <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+#set up extent parameter for use throughout script
+ext <- extent(-180, 180, -90, 90)
+```
+
+```{r}
+
+```
+
+
+
+```{r}
+# Get data directly form GBIF using 'gbif' function
+# Don't run because there are more than 17,000 observations
+# cobia_gbif <- gbif("rachycentron", "canadum", geo = FALSE)
+```
+
+```{r}
+# Map of localities
+
+data(wrld_simpl)
+plot(wrld_simpl, xlim=c(-80,70), ylim=c(-60,10), axes=TRUE, col="light yellow")
+# restore the box around the map
+box()
+# plot points
+points(cobia_data$lon, cobia_data$lat, col='orange', pch=20, cex=0.75) > # plot points again to add a border, for better visibility
+points(cobia_data$lon, cobia_data$lat, col='red', cex=0.75)
+```
+
+```{r}
+# Presence data
+# Remove observations with no coordinates
+cobia_data <- cobia %>% 
+  dplyr::select( decimalLongitude,decimalLatitude) %>% 
+filter(decimalLatitude != "NA")
+
+colnames(cobia_data) <- c("lon", "lat")
+
+summary(cobia_data)
+
+cobia_data <- as.data.frame(cobia_data)
+```
+
+
+```{r}
+# Environmental variables 
+# Explore datasets in the package 
+list_datasets() 
+
+# Explore layers in a dataset 
+list_layers() 
+
+# Download specific layers to current directory
+files <- load_layers(c("BO_sstmean", "BO_dissox", "MS_biogeo08_sss_mean_5m")) 
+
+# Make a rasterLayer with predictor variables
+predictors <- stack(files)
+
+```
+
+```{r}
+# Run Maxent
+
+jar <- paste(system.file(package="dismo"), "/java/maxent.jar", sep='')
+
+if (file.exists(jar)) {
+  xm <- maxent(predictors, p = cobia_data)
+ plot(xm)
+} else {
+  cat('cannot run this example because maxent is not available') + plot(1)
+}
+
+```
+
+
