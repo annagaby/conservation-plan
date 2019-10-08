@@ -9,10 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
-# Install packages one by one
-```
-
 
 ```{r}
 # Load packages and read files
@@ -29,35 +25,31 @@ library(rJava)
 library(maptools)
 library(sdmpredictors) 
 
+# This file is a a small subset of cobia occurrences (so that it doesn't take too long to load)
 cobia <- read_csv("cobia_occurrences_BR.csv")
 
 
 ```
 
-
-
+# Projection and Extent
 ```{r}
 # set up projection parameter for use throughout script
 projection <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
 #set up extent parameter for use throughout script
 ext <- extent(-180, 180, -90, 90)
 ```
 
-```{r}
-
-```
-
-
-
+# GBIF Data
 ```{r}
 # Get data directly form GBIF using 'gbif' function
 # Don't run because there are more than 17,000 observations
 # cobia_gbif <- gbif("rachycentron", "canadum", geo = FALSE)
 ```
 
+# Map of cobia occurrences
 ```{r}
-# Map of localities
-
+# Get world map data
 data(wrld_simpl)
 plot(wrld_simpl, xlim=c(-80,70), ylim=c(-60,10), axes=TRUE, col="light yellow")
 # restore the box around the map
@@ -67,8 +59,8 @@ points(cobia_data$lon, cobia_data$lat, col='orange', pch=20, cex=0.75) > # plot 
 points(cobia_data$lon, cobia_data$lat, col='red', cex=0.75)
 ```
 
-```{r}
 # Presence data
+```{r}
 # Remove observations with no coordinates
 cobia_data <- cobia %>% 
   dplyr::select( decimalLongitude,decimalLatitude) %>% 
@@ -81,9 +73,8 @@ summary(cobia_data)
 cobia_data <- as.data.frame(cobia_data)
 ```
 
-
+# Environmental variables
 ```{r}
-# Environmental variables 
 # Explore datasets in the package 
 list_datasets() 
 
@@ -97,8 +88,8 @@ files <- load_layers(c("BO_sstmean", "BO_dissox", "MS_biogeo08_sss_mean_5m"))
 predictors <- stack(files)
 
 ```
+# Maxent requirements 
 ```{r}
-
 # Before running maxent using the 'dismo' package:
 # - download maxent program from http://www.cs.princeton.edu/~schapire/maxent/
 # -  Put the file ’maxent.jar’ in the ’java’ folder of the ’dismo’ package. That is the folder returned by system.file("java", package="dismo")
@@ -106,10 +97,9 @@ predictors <- stack(files)
 ```
 
 
-
-
+# Maxent
 ```{r}
-# Run Maxent
+# Run Maxent if java file is in the correct folder
 
 jar <- paste(system.file(package="dismo"), "/java/maxent.jar", sep='')
 
