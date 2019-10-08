@@ -59,7 +59,7 @@ cobia_data <- cobia_gbif %>%
 ```{r}
 # Get world map data
 data(wrld_simpl)
-plot(wrld_simpl, xlim=c(-80,70), ylim=c(-60,10), axes=TRUE, col="light yellow")
+plot(wrld_simpl, xlim=c(-90,90), ylim=c(-70,70), axes=TRUE, col="light yellow")
 # restore the box around the map
 box()
 # plot points
