@@ -42,9 +42,17 @@ ext <- extent(-180, 180, -90, 90)
 
 # GBIF Data
 ```{r}
-# Get data directly form GBIF using 'gbif' function
-# Don't run because there are more than 17,000 observations
-# cobia_gbif <- gbif("rachycentron", "canadum", geo = FALSE)
+# Get data directly from GBIF using 'gbif' function
+# DON'T RUN!!! unless you really want to use larger dataset because there are more than 17,000 observations
+cobia_gbif <- gbif("rachycentron", "canadum", geo = FALSE)
+
+# Get column names
+names(cobia_gbif)
+
+# Change cobia_data from small dataset to bigger dataset, keep only coordinates with a value
+cobia_data <- cobia_gbif %>% 
+  select("lon", "lat") %>% 
+  filter("lon" != "NA")
 ```
 
 # Map of cobia occurrences
@@ -81,8 +89,8 @@ list_datasets()
 # Explore layers in a dataset 
 list_layers() 
 
-# Download specific layers to current directory
-files <- load_layers(c("BO_sstmean", "BO_dissox", "MS_biogeo08_sss_mean_5m")) 
+# Download specific layers to current directory. In this case we are downloading mean sea surface temperature, max sea surface temperature, min sea surface temperature, dissolved oxygen, and sea surface salinity
+files <- load_layers(c("BO_sstmean", "BO_sstmax", "BO_sstmin", "BO_dissox", "MS_biogeo08_sss_mean_5m")) 
 
 # Make a rasterLayer with predictor variables
 predictors <- stack(files)
@@ -104,12 +112,30 @@ predictors <- stack(files)
 jar <- paste(system.file(package="dismo"), "/java/maxent.jar", sep='')
 
 if (file.exists(jar)) {
-  xm <- maxent(predictors, p = cobia_data)
- plot(xm)
+  # Fit maxent model
+  cobia_model <- maxent(predictors, p = cobia_data)
+  
+ # Plot showing importance of every variable
+ plot(cobia_model)
+ 
+ # Response curves
+ response(cobia_model)
+ 
+ # Predict the entire dataset
+ cobia_pred <- predict(cobia_model, predictors)
+ 
+ # Plot predictions
+ plot(cobia_pred, main = "Predicted Suitability")
+ map('worldCobia', fill=FALSE, add=TRUE)
+points(cobia_data$lon, cobia_data$lat, pch="+", cex=0.2)
+
 } else {
   cat('cannot run this example because maxent is not available') + plot(1)
 }
 
+```
+```{r}
+map('worldHires', fill=FALSE, add=TRUE)
 ```
 
 
