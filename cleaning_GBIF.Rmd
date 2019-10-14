@@ -1,0 +1,108 @@
+---
+title: "cleaning_GBIF"
+author: "Anna Calle"
+date: "10/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+SCRIPT TO CLEAN GBIF DATA!
+```{r}
+# Load packages
+library(tidyverse)
+library(sf)
+library(raster)
+library(rgdal)
+library(dplyr)
+library(rgeos)
+library(scales)
+library(fasterize)
+library(dismo)
+library(rJava)
+library(maptools)
+library(sdmpredictors) 
+```
+
+
+
+
+```{r}
+# Get data directly from GBIF using 'gbif' function
+# DON'T RUN!!! unless you really want to use larger dataset because there are more than 17,000 observations
+cobia_gbif <- gbif("rachycentron", "canadum", geo = FALSE)
+
+# Get column names
+names(cobia_gbif)
+
+# Change cobia_data from small dataset to bigger dataset, keep only coordinates with a value
+cobia_data <- cobia_gbif 
+
+#%>% 
+ # select("lon", "lat") %>% 
+  #filter("lon" != "NA")
+```
+
+```{r}
+subset(acaule, !is.na(lon) & !is.na(lat))
+
+
+```
+
+Make sure points are in the right location
+```{r}
+# Get world map data
+data(wrld_simpl)
+plot(wrld_simpl, xlim=c(-90,90), ylim=c(-70,70), axes=TRUE, col="light yellow")
+# restore the box around the map
+box()
+# plot points
+points(cobia_data$lon, cobia_data$lat, col='orange', pch=20, cex=0.75) > # plot points again to add a border, for better visibility
+points(cobia_data$lon, cobia_data$lat, col='red', cex=0.75)
+```
+
+Look for coordinates of zero
+```{r}
+# The gbif function sets coordinates that are (0, 0) to NA, but not if only one coordinate is zero.
+lonzero = subset(cobia_data, lon==0)
+# show all records, only the first 13 columns
+lonzero[, 1:13]
+
+```
+
+Eliminating duplicates
+```{r}
+dups <- duplicated(cobia_data[, c('lon', 'lat')])
+# number of duplicates
+sum(dups)
+# keep the records that are not duplicated
+cobia <- cobia_data[!dups, ]
+```
+
+Sampling bias
+```{r}
+# create a RasterLayer with the extent of cobia data
+r <- raster(cobia)
+# set the resolution of the cells to (for example) 1 degree > res(r) <- 1
+# expand (extend) the extent of the RasterLayer a little
+r <- extend(r, extent(r)+1)
+# sample:
+acsel <- gridSample(cobia, r, n=1)
+# to illustrate the method and show the result
+p <- rasterToPolygons(r)
+plot(p, border='gray')
+points(cobia)
+# selected points in red
+points(acsel, cex=1, col='red', pch='x')
+```
+
+Save clean file
+```{r}
+clean_file <- paste(system.file(package="dismo"), '/ex/cobia_clean.csv', sep='') 
+cobia_clean <- read.csv(clean_file)
+```
+
+
+
