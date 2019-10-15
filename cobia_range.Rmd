@@ -23,7 +23,9 @@ library(fasterize)
 library(dismo)
 library(rJava)
 library(maptools)
-library(sdmpredictors) 
+library(sdmpredictors)
+library(maps)
+library(mapdata)
 
 # This file is a a small subset of cobia occurrences (so that it doesn't take too long to load)
 cobia <- read_csv("cobia_occurrences_BR.csv")
@@ -51,7 +53,7 @@ names(cobia_gbif)
 
 # Change cobia_data from small dataset to bigger dataset, keep only coordinates with a value
 cobia_data <- cobia_gbif %>% 
-  select("lon", "lat") %>% 
+  dplyr::select("lon", "lat") %>% 
   filter("lon" != "NA")
 ```
 
@@ -126,16 +128,14 @@ if (file.exists(jar)) {
  
  # Plot predictions
  plot(cobia_pred, main = "Predicted Suitability")
- map('worldCobia', fill=FALSE, add=TRUE)
+ map('worldHires', fill=FALSE, add=TRUE)
 points(cobia_data$lon, cobia_data$lat, pch="+", cex=0.2)
 
 } else {
   cat('cannot run this example because maxent is not available') + plot(1)
 }
 
-```
-```{r}
-map('worldHires', fill=FALSE, add=TRUE)
-```
+
+# Fix!!! map boundaries are not matching prediction layer
 
 
