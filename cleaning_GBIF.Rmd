@@ -109,7 +109,7 @@ points(cobia_sample, cex=1, col='red', pch='x')
 Save clean file
 ```{r}
 # Save cobia sample as a csv
-write.csv(cobia_sample, file = "cobia_sample.csv")
+write.csv(cobia_sample, file = "cobia_sample.csv", row.names = FALSE)
 
 ```
 

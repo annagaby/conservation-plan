@@ -26,11 +26,6 @@ library(maptools)
 library(sdmpredictors)
 library(maps)
 library(mapdata)
-
-# This file is a a small subset of cobia occurrences (so that it doesn't take too long to load)
-cobia <- read_csv("cobia_occurrences_BR.csv")
-
-
 ```
 
 # Projection and Extent
@@ -42,46 +37,15 @@ projection <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 ext <- extent(-180, 180, -90, 90)
 ```
 
-# GBIF Data
+# Ocurrence data
 ```{r}
-# Get data directly from GBIF using 'gbif' function
-# DON'T RUN!!! unless you really want to use larger dataset because there are more than 17,000 observations
-cobia_gbif <- gbif("rachycentron", "canadum", geo = FALSE)
+# Read in clean data
+cobia_sample <- read_csv("cobia_sample.csv")
 
-# Get column names
-names(cobia_gbif)
-
-# Change cobia_data from small dataset to bigger dataset, keep only coordinates with a value
-cobia_data <- cobia_gbif %>% 
-  dplyr::select("lon", "lat") %>% 
-  filter("lon" != "NA")
+# Convert to data frame
+cobia_sample <- as.data.frame(cobia_sample)
 ```
 
-# Map of cobia occurrences
-```{r}
-# Get world map data
-data(wrld_simpl)
-plot(wrld_simpl, xlim=c(-90,90), ylim=c(-70,70), axes=TRUE, col="light yellow")
-# restore the box around the map
-box()
-# plot points
-points(cobia_data$lon, cobia_data$lat, col='orange', pch=20, cex=0.75) > # plot points again to add a border, for better visibility
-points(cobia_data$lon, cobia_data$lat, col='red', cex=0.75)
-```
-
-# Presence data
-```{r}
-# Remove observations with no coordinates
-cobia_data <- cobia %>% 
-  dplyr::select( decimalLongitude,decimalLatitude) %>% 
-filter(decimalLatitude != "NA")
-
-colnames(cobia_data) <- c("lon", "lat")
-
-summary(cobia_data)
-
-cobia_data <- as.data.frame(cobia_data)
-```
 
 # Environmental variables
 ```{r}
@@ -92,12 +56,13 @@ list_datasets()
 list_layers() 
 
 # Download specific layers to current directory. In this case we are downloading mean sea surface temperature, max sea surface temperature, min sea surface temperature, dissolved oxygen, and sea surface salinity
-files <- load_layers(c("BO_sstmean", "BO_sstmax", "BO_sstmin", "BO_dissox", "MS_biogeo08_sss_mean_5m")) 
+files <- load_layers(c("BO_sstmax", "BO_sstmin", "BO_dissox", "MS_biogeo08_sss_mean_5m")) 
 
 # Make a rasterLayer with predictor variables
 predictors <- stack(files)
 
 ```
+
 # Maxent requirements 
 ```{r}
 # Before running maxent using the 'dismo' package:
@@ -115,7 +80,7 @@ jar <- paste(system.file(package="dismo"), "/java/maxent.jar", sep='')
 
 if (file.exists(jar)) {
   # Fit maxent model
-  cobia_model <- maxent(predictors, p = cobia_data)
+  cobia_model <- maxent(predictors, p = cobia_sample)
   
  # Plot showing importance of every variable
  plot(cobia_model)
@@ -129,7 +94,7 @@ if (file.exists(jar)) {
  # Plot predictions
  plot(cobia_pred, main = "Predicted Suitability")
  map('worldHires', fill=FALSE, add=TRUE)
-points(cobia_data$lon, cobia_data$lat, pch="+", cex=0.2)
+points(cobia_sample$lon, cobia_sample$lat, pch="+", cex=0.2)
 
 } else {
   cat('cannot run this example because maxent is not available') + plot(1)
@@ -137,5 +102,5 @@ points(cobia_data$lon, cobia_data$lat, pch="+", cex=0.2)
 
 
 # Fix!!! map boundaries are not matching prediction layer
-
+```
 
