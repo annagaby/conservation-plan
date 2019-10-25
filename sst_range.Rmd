@@ -24,11 +24,15 @@ library(rJava)
 library(maptools)
 library(sdmpredictors)
 library(maps)
+library(sp)
+library(ncdf4)
 ```
 
+*Cobia's optimal growth is 27-29 C
+
 Objectives:
-- Keep locations with min temperature higher than 19C
-- Keep locations with max temperature lower than 30C
+- Keep locations with min temperature higher than 27C
+- Keep locations with max temperature lower than 29C
 
 Download sst from Bio-Oracle
 ```{r}
@@ -40,7 +44,7 @@ list_layers()
 
 # Download max and min sst layers
 min <- load_layers("BO_sstmin")
-max <- load_layers("BO_sstmin")
+max <- load_layers("BO_sstmax")
 ```
 Visualize data
 ```{r}
@@ -56,8 +60,8 @@ plot(max)
 Reclassify min sst layer
 ```{r}
 # Reclassify matrix
-rcl_matrix_min <- c( -Inf, 19, 0,
-                19, Inf, 1)
+rcl_matrix_min <- c( -Inf, 27, 0,
+                27, Inf, 1)
 
 # Reclassify sst
 sst_binary_min <- reclassify(min, rcl = rcl_matrix_min)
@@ -68,8 +72,8 @@ plot(sst_binary_min)
 Reclassify max sst layer
 ```{r}
 # Reclassify matrix
-rcl_matrix_max <- c( -Inf, 30, 1,
-                30, Inf, 0)
+rcl_matrix_max <- c( -Inf, 29, 1,
+                29, Inf, 0)
 
 # Reclassify sst
 sst_binary_max <- reclassify(min, rcl = rcl_matrix_max)
@@ -91,20 +95,26 @@ plot(sst_range)
 Brazil's EEZ
 ```{r}
 # Read file
-eez <- read_sf(dsn = ".", layer = "eez")
+eez <- st_read(dsn = ".", layer = "eez")
 
 # View column names
 head(eez)
+
+# Plot
+ggplot() + geom_sf(data = eez)
 ```
 
 
-Crop
+Mask and crop 
 ```{r}
-# Crop sst range to Brazil's EEZ extent
-sst_range_crop <- crop(sst_range, eez)
+# Create mask of sst range using ezz boundaries
+masked <- mask(x = sst_range, mask =eez)
+plot(masked)
 
-# Plot and add basemap
-plot(sst_range_crop)
+# Crop sst range to Brazil's EEZ extent
+cropped <- crop(x = masked, y = extent(eez))
+plot(cropped)
+# Add basemap (Note: borders don't match)
 map('world', fill = T, add = T, col = 'gray')
 ```
 
@@ -112,10 +122,26 @@ Reefs
 ```{r}
 # Read shapefile
 reefs <-  read_sf(dsn = ".", layer = "reef_500_poly")
-
 plot(reefs)
   
 ```
+
+Mask using reefs
+```{r}
+reefs_masked <- mask(x = sst_range, mask =reefs)
+plot(reefs_masked)
+```
+
+
+
+Reading depth netcdf file
+```{r}
+
+
+
+
+```
+
 
 
 

@@ -1,0 +1,75 @@
+---
+title: "data_cp"
+author: "Anna Calle"
+date: "10/24/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load packages
+library(tidyverse)
+library(sf)
+library(raster)
+library(rgdal)
+library(dplyr)
+library(rgeos)
+library(scales)
+library(fasterize)
+library(dismo)
+library(rJava)
+library(maptools)
+library(sdmpredictors)
+library(maps)
+library(sp)
+library(ncdf4)
+```
+
+```{r}
+# Read and plot all layers (excluding Cobia)
+
+# EEZ
+eez <- st_read(dsn = ".", layer = "eez")
+plot(eez)
+
+# Depth
+depth_nc <- nc_open("GEBCO_2019_SID.nc")
+
+# Sea Surface Temperature
+
+# Reefs
+reefs <-  read_sf(dsn = ".", layer = "reef_500_poly")
+plot(reefs)
+
+# MPAs change to JCs
+mpas <- st_read(dsn = ".", layer = "APZCM_AreasProtegidas")
+plot(mpas$geometry)
+
+# LOOKING FOR RANGE OF DATES OF MPA CREATION
+
+mpas_num <- mpas %>% 
+  filter( ANO_CRIA6 )
+as.numeric(mpas$ANO_CRIA6)
+mpas
+min(mpas$ANO_CRIA6)
+
+# Ports
+ports <- st_read(dsn = ".", layer = "ne_50m_ports")
+
+
+plot(ports$geometry)
+map('world', fill = T, add = T, col = 'gray')
+
+
+
+```
+
+```{r}
+# Crop to Brazil's EEZ extent, change crs to WGS84, change so all layers have the same resolution and same class.
+
+
+```
+
