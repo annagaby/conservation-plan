@@ -13,8 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load packages
 library(tidyverse)
 library(sf)
-library(raster)
+library(sp)
 library(rgdal)
+library(raster)
 library(dplyr)
 library(rgeos)
 library(scales)
@@ -24,52 +25,176 @@ library(rJava)
 library(maptools)
 library(sdmpredictors)
 library(maps)
-library(sp)
 library(ncdf4)
+library(marmap)
 ```
 
+
 ```{r}
-# Read and plot all layers (excluding Cobia)
+# Setup for downloading data using drive file stream
+
+# Create root based on OS
+if(Sys.info()["sysname"] == "Windows"){
+  team_path <- "G:/"
+} else {
+  team_path <- "/Volumes/GoogleDrive/"
+}
+
+#Create full file path
+path <- paste0(team_path, "My Drive/conservation-plan/data/shapefiles")
+
+```
+
+
+
+# Read data
+```{r}
+# Read all layers (excluding GBIF and Bio-ORACLE)
 
 # EEZ
-eez <- st_read(dsn = ".", layer = "eez")
-plot(eez)
+eez <- read_sf(dsn = path,
+                layer = "eez")
 
 # Depth
-depth_nc <- nc_open("GEBCO_2019_SID.nc")
+depth <- nc_open(paste0(path,"/GEBCO_2019_SID.nc"))
 
-# Sea Surface Temperature
 
 # Reefs
-reefs <-  read_sf(dsn = ".", layer = "reef_500_poly")
-plot(reefs)
+reefs <-  read_sf(dsn = path,
+                layer = "reef_500_poly")
 
-# MPAs change to JCs
-mpas <- st_read(dsn = ".", layer = "APZCM_AreasProtegidas")
-plot(mpas$geometry)
-
-# LOOKING FOR RANGE OF DATES OF MPA CREATION
-
-mpas_num <- mpas %>% 
-  filter( ANO_CRIA6 )
-as.numeric(mpas$ANO_CRIA6)
-mpas
-min(mpas$ANO_CRIA6)
+# MPAs
+mpas <- read_sf(dsn = path,
+                layer = "WDPA_Mar2018_marine-shapefile-polygons")
 
 # Ports
-ports <- st_read(dsn = ".", layer = "ne_50m_ports")
+ports <- read_sf(dsn = path,
+                layer = "tra_edif_const_portuaria_p")
+
+# Aquaculture
+
+aquaculture <-  read_sf(dsn = path,
+                layer = "Aquaculture")
+
+# No take zones
+
+no_take <-  read_sf(dsn = path,
+                layer = "No_Take_Zone_ACREshp")
+
+# Important wetlands Ramsar
+
+wetlands <-  read_sf(dsn = path,
+                layer = "Important_Wetlands_Ramsar")
+
+# Artificial reefs
+
+reefs_artificial <-  read_sf(dsn = path,
+                layer = "Artificial_Reefs")
 
 
-plot(ports$geometry)
-map('world', fill = T, add = T, col = 'gray')
+```
 
 
+```{r}
+# EEZ
+ggplot( data = eez) +
+  geom_sf()
+```
+
+
+
+```{r}
+# MPAS
+# First filter data only for Brazil
+mpas_BR <- mpas %>% 
+  filter(ISO3 == "BRA")
+
+ggplot( data = mpas_BR) +
+  geom_sf()
+
+```
+
+
+```{r}
+# Ports
+ggplot( data = ports) +
+  geom_sf()
 
 ```
 
 ```{r}
-# Crop to Brazil's EEZ extent, change crs to WGS84, change so all layers have the same resolution and same class.
-
+# Reefs
+ggplot( data = reefs) +
+  geom_sf()
 
 ```
+
+
+
+```{r}
+# Aquaculture
+ggplot( data = aquaculture) +
+  geom_sf()
+```
+
+```{r}
+# No take zones
+ggplot( data = no_take) +
+  geom_sf()
+```
+
+```{r}
+# Important wetlands Ramsar
+ggplot( data = wetlands) +
+  geom_sf()
+  ggplot(data = world) +
+  geom_sf
+```
+
+```{r}
+# Artificial coral reefs
+ggplot( data = reefs_artificial) +
+  geom_sf()
+```
+
+# Buffering mpas
+```{r}
+mpas_buffer <- mpas_BR %>% 
+  st_centroid() %>% 
+  st_buffer(dist = 0.5) %>% # need to figure out how to use distance units
+  st_union()
+
+ggplot(mpas_buffer) +
+  geom_sf()
+```
+
+# Writing netcdf file ss geotiff
+```{r}
+# function to read bathy data
+
+depth_gebco <- readGEBCO.bathy("GEBCO_2019_SID.nc", resolution = 1, sid = FALSE)
+
+
+depth_gebco <- readGEBCO.bathy(paste0(path,"/GEBCO_2019_SID.nc"))
+```
+
+```{r}
+# function to reproject sf objects (maybe all kinds of objects)
+reproject_crop <- function(data){
+  st_transform(data, "+proj=longlat +datum=WGS84 +no_defs") %>% 
+  st_intersection(eez)
+}
+
+reproject_crop(reefs)
+
+
+
+reefs <-  st_transform(reefs, "+proj=longlat +datum=WGS84 +no_defs")
+reefs_cropped <- st_intersection(reefs, eez)
+
+aquaculture <- st_transform(aquaculture, "+proj=longlat +datum=WGS84 +no_defs")
+aquaculture_cropped <-crop( aquaculture, eez)
+
+```
+
 
