@@ -23,7 +23,6 @@ library(rgeos)
 library(scales)
 library(fasterize)
 library(dismo)
-library(rJava)
 library(maptools)
 library(sdmpredictors) 
 ```
@@ -33,6 +32,11 @@ Download GBIF data
 # Get data directly from GBIF using 'gbif' function
 # DON'T RUN!!! unless you really want to because there are more than 17,000 observations
 cobia_gbif <- gbif("rachycentron", "canadum", geo = FALSE)
+
+#Filter to just keep human observations:
+human_cobia <- cobia_gbif %>% 
+  filter(basisOfRecord == "HUMAN_OBSERVATION")
+
 
 # How many rows and columns?
 dim(cobia_gbif)
