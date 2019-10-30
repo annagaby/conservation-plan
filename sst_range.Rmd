@@ -91,32 +91,24 @@ plot(sst_range)
 Brazil's EEZ
 ```{r}
 # Read file
-eez <- read_sf(dsn = ".", layer = "eez")
+eez <- read_sf(dsn = path, layer = "eez")
 
 # View column names
 head(eez)
 ```
 
-
-Crop
+Mask and crop
 ```{r}
+# Create mask using eez
+sst_range_masked <- mask(sst_range, mask = eez)
+
 # Crop sst range to Brazil's EEZ extent
-sst_range_crop <- crop(sst_range, eez)
+sst_range_cropped <- crop(sst_range_masked, extent(eez))
 
 # Plot and add basemap
-plot(sst_range_crop)
+plot(sst_range_cropped)
 map('world', fill = T, add = T, col = 'gray')
 ```
-
-Reefs
-```{r}
-# Read shapefile
-reefs <-  read_sf(dsn = ".", layer = "reef_500_poly")
-
-plot(reefs)
-  
-```
-
 
 
 
