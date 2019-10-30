@@ -31,17 +31,16 @@ Download GBIF data
 ```{r}
 # Get data directly from GBIF using 'gbif' function
 # DON'T RUN!!! unless you really want to because there are more than 17,000 observations
-cobia_gbif <- gbif("rachycentron", "canadum", geo = FALSE)
+cobia_raw <- gbif("rachycentron", "canadum", geo = FALSE)
 
 #Filter to just keep human observations:
-human_cobia <- cobia_gbif %>% 
+cobia_gbif <- cobia_raw %>% 
   filter(basisOfRecord == "HUMAN_OBSERVATION")
-
 
 # How many rows and columns?
 dim(cobia_gbif)
 
-# Names of colums?
+# Names of columns?
 names(cobia_gbif)
 
 # Keep only observations that have data (not NAs)
