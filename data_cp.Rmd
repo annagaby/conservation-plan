@@ -56,16 +56,20 @@ eez <- read_sf(dsn = path,
                 layer = "eez")
 
 # Depth
-depth <- nc_open(paste0(path,"/GEBCO_2019_SID.nc"))
+depth <- raster(paste0(path,"/GEBCO_2019_-55.5111_7.3512_-25.3811_-35.2599_Geotiff.tif"))
 
 
 # Reefs
 reefs <-  read_sf(dsn = path,
                 layer = "reef_500_poly")
 
-# MPAs
+# MPAs polygons
 mpas <- read_sf(dsn = path,
-                layer = "WDPA_Mar2018_marine-shapefile-polygons")
+                layer = "WDPA_Oct2019_marine-shapefile-polygons")
+
+# MPAs points
+mpas_points <- read_sf(dsn = path,
+                layer = "WDPA_Oct2019_marine-shapefile-points")
 
 # Ports
 ports <- read_sf(dsn = path,
@@ -101,6 +105,13 @@ ggplot( data = eez) +
   geom_sf()
 ```
 
+```{r}
+# Depth
+plot(depth)
+
+hist(depth)
+```
+
 
 
 ```{r}
@@ -130,7 +141,6 @@ ggplot( data = reefs) +
 ```
 
 
-
 ```{r}
 # Aquaculture
 ggplot( data = aquaculture) +
@@ -147,8 +157,6 @@ ggplot( data = no_take) +
 # Important wetlands Ramsar
 ggplot( data = wetlands) +
   geom_sf()
-  ggplot(data = world) +
-  geom_sf
 ```
 
 ```{r}
@@ -157,7 +165,8 @@ ggplot( data = reefs_artificial) +
   geom_sf()
 ```
 
-# Buffering mpas
+
+Buffering mpas
 ```{r}
 mpas_buffer <- mpas_BR %>% 
   st_centroid() %>% 
@@ -168,15 +177,33 @@ ggplot(mpas_buffer) +
   geom_sf()
 ```
 
-# Writing netcdf file ss geotiff
+Cropping depth to eez
 ```{r}
-# function to read bathy data
+depth_BR <- crop(depth, eez)
 
-depth_gebco <- readGEBCO.bathy("GEBCO_2019_SID.nc", resolution = 1, sid = FALSE)
+depth_BRA <- mask(depth_BR, eez)
 
-
-depth_gebco <- readGEBCO.bathy(paste0(path,"/GEBCO_2019_SID.nc"))
+plot(depth_BRA)
 ```
+
+
+Reclassifying depth to have 1s only if it's in between 25-100m
+
+```{r}
+# Our reclassification matrix. Make sure you know what this is saying
+rcl_mat_depth <- c(-Inf, -100, 0,
+                   -100, -25, 1,
+                   -25, Inf, 0)
+
+# Reclassify the species layer
+depth_binary <- reclassify(depth_BRA,rcl= rcl_mat_depth)
+
+# Plot
+
+
+```
+
+
 
 ```{r}
 # function to reproject sf objects (maybe all kinds of objects)
