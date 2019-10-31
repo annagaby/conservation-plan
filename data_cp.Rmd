@@ -98,7 +98,7 @@ reefs_artificial <-  read_sf(dsn = path,
 
 ```
 
-
+# Plot data 
 ```{r}
 # EEZ
 ggplot( data = eez) +
@@ -177,6 +177,38 @@ ggplot(mpas_buffer) +
   geom_sf()
 ```
 
+Download SST from Bio-Oracle
+```{r}
+# Explore datasets in the package 
+list_datasets() 
+
+# Explore layers in a dataset 
+list_layers() 
+
+# Download max and min sst layers
+ min_sst <- load_layers("BO_sstmin")
+max_sst <- load_layers("BO_sstmax")
+```
+
+Visualize SST data
+```{r}
+# Histograms
+hist(min)
+hist(max)
+
+# Plots
+plot(min)
+plot(max)
+```
+Cropping SST to eez
+```{r}
+max_sst_BR <- crop(max_sst, eez)
+min_sst_BR <- crop(min_sst, eez)
+
+max_sst_BRA <- mask(max_sst_BR, eez)
+min_sst_BRA <- mask(min_sst_BR, eez)
+```
+
 Cropping depth to eez
 ```{r}
 depth_BR <- crop(depth, eez)
@@ -187,29 +219,13 @@ plot(depth_BRA)
 ```
 
 
-Reclassifying depth to have 1s only if it's in between 25-100m
-
-```{r}
-# Our reclassification matrix. Make sure you know what this is saying
-rcl_mat_depth <- c(-Inf, -100, 0,
-                   -100, -25, 1,
-                   -25, Inf, 0)
-
-# Reclassify the species layer
-depth_binary <- reclassify(depth_BRA,rcl= rcl_mat_depth)
-
-# Plot
-
-
-```
-
 
 
 ```{r}
 # function to reproject sf objects (maybe all kinds of objects)
 reproject_crop <- function(data){
   st_transform(data, "+proj=longlat +datum=WGS84 +no_defs") %>% 
-  st_intersection(eez)
+  st_intersection(eez) # maybe if you transform to SpatialPolygonsDataFrame
 }
 
 reproject_crop(reefs)
