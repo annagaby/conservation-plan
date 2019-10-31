@@ -56,7 +56,7 @@ eez <- read_sf(dsn = path,
                 layer = "eez")
 
 # Depth
-depth <- raster(paste0(path,"/GEBCO_2019_-55.5111_7.3512_-25.3811_-35.2599_Geotiff.tif"))
+depth <- raster(paste0(path,"/gebco_2019_n7.045066_s-35.78779_w-54.58321_e-26.01452.tif"))
 
 
 # Reefs
@@ -211,18 +211,23 @@ min_sst_BRA <- mask(min_sst_BR, eez)
 
 Cropping depth to eez
 ```{r}
+# Crop
 depth_BR <- crop(depth, eez)
 
+# Mask
 depth_BRA <- mask(depth_BR, eez)
 
-plot(depth_BRA)
+# Resample so it has same resolution as SST layers
+depth_BRA_res <- resample(depth_BRA, min_sst_BRA,method='ngb',progress='text')
+
+plot(depth_BRA_res)
 ```
 
 
 
-
 ```{r}
-# function to reproject sf objects (maybe all kinds of objects)
+# function to reproject sf objects (maybe all kinds of objects?) 
+# need them to have same extent, resolution, and projection
 reproject_crop <- function(data){
   st_transform(data, "+proj=longlat +datum=WGS84 +no_defs") %>% 
   st_intersection(eez) # maybe if you transform to SpatialPolygonsDataFrame
