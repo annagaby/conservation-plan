@@ -1,0 +1,78 @@
+---
+title: "grid"
+author: "Anna Calle"
+date: "10/30/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Creating grid for eez!
+
+*Note: followed steps from https://rpubs.com/huanfaChen/grid_from_polygon
+```{r}
+# Load required packages
+library(rgdal)
+library(raster)
+```
+Read eez
+```{r}
+eez <- readOGR(dsn = path, layer = 'eez', stringsAsFactors = F) # needs to be a SpatialPolygonsDataFrame
+```
+
+
+
+Dividing the grid
+```{r}
+# We are creating a 50km by 50 km grid
+grid <- raster(extent(eez), resolution = c(1,1), crs = crs(eez)) # units for resolution?
+
+# class of grid
+class(grid)
+
+```
+```{r}
+# convert to SpatialPolygonsDataFrame
+gridPolygon <- rasterToPolygons(grid)
+class(gridPolygon)
+```
+```{r}
+# Plot grid and eez
+plot(eez)
+plot(gridPolygon, add = T)
+```
+
+Extend grid to cover all region
+```{r}
+grid <- raster(extent(eez), resolution = c(1,1), crs = crs(eez))
+grid <- raster::extend(grid, c(1,1))
+
+# convert to SpatialPolygonsDataFrame
+gridPolygon <- rasterToPolygons(grid)
+class(gridPolygon)
+```
+
+Plot
+```{r}
+plot(eez)
+plot(gridPolygon, add = T)
+```
+
+Clipping grid to fit eez boundary
+```{r}
+intersectGridClipped <- raster::intersect(gridPolygon, eez)
+
+plot(intersectGridClipped)
+```
+
+
+
+How could you create an hexagonal grid?
+
+
+
+
+
+
