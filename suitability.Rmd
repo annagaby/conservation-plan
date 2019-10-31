@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Suitability 
 
 - Depth: 25-100m
-- Min sea surface temp: >19°C
+- Min sea surface temp: >22°C
 - Max sea surface temp: <30°C
 
 *Note: run data Rmd first!
@@ -26,7 +26,7 @@ rcl_mat_depth <- c(-Inf, -100, 0,
                    -25, Inf, 0)
 
 # Reclassify the depth layer
-depth_binary <- reclassify(depth_BRA,rcl= rcl_mat_depth)
+depth_binary <- reclassify(depth_BRA_res,rcl= rcl_mat_depth)
 
 # Plot reclassified layer
 plot(depth_binary)
@@ -35,8 +35,8 @@ plot(depth_binary)
 Reclassify min SST layer to have 1s only if it is above 19°C, and 0s otherwise
 ```{r}
 # Reclassification matrix for min SST
-rcl_matrix_min <- c( -Inf, 19, 0,
-                19, Inf, 1)
+rcl_matrix_min <- c( -Inf, 22, 0,
+                22, Inf, 1)
 
 # Reclassify min SST
 sst_binary_min <- reclassify(min_sst_BRA, rcl = rcl_matrix_min)
@@ -62,28 +62,14 @@ plot(sst_binary_max)
 Suitable areas
 ```{r}
 # Overlay all layers
+# Note: they all need to have the same extent and resolution
 suitable <- overlay(sst_binary_min, sst_binary_max, depth_binary, fun = function(x,y,z){x+y+z})
 
-# Plot range
+# Plot suitable areas
 plot(suitable)
-
-```
-
-
-
-Mask and crop
-```{r}
-# Create mask using eez
-sst_range_masked <- mask(sst_range, mask = eez)
-
-# Crop sst range to Brazil's EEZ extent
-sst_range_cropped <- crop(sst_range_masked, extent(eez))
-
-# Plot and add basemap
-plot(sst_range_cropped)
 map('world', fill = T, add = T, col = 'gray')
-```
 
+```
 
 
 
