@@ -1,0 +1,91 @@
+---
+title: "suitability"
+author: "Anna Calle"
+date: "10/31/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Suitability 
+
+- Depth: 25-100m
+- Min sea surface temp: >19°C
+- Max sea surface temp: <30°C
+
+*Note: run data Rmd first!
+
+Reclassifying depth to have 1s only if it's in between 25-100m, and 0s otherwise
+
+```{r}
+# Reclassification matrix for depth layer
+rcl_mat_depth <- c(-Inf, -100, 0,
+                   -100, -25, 1,
+                   -25, Inf, 0)
+
+# Reclassify the depth layer
+depth_binary <- reclassify(depth_BRA,rcl= rcl_mat_depth)
+
+# Plot reclassified layer
+plot(depth_binary)
+```
+
+Reclassify min SST layer to have 1s only if it is above 19°C, and 0s otherwise
+```{r}
+# Reclassification matrix for min SST
+rcl_matrix_min <- c( -Inf, 19, 0,
+                19, Inf, 1)
+
+# Reclassify min SST
+sst_binary_min <- reclassify(min_sst_BRA, rcl = rcl_matrix_min)
+
+# Plot reclassified layer
+plot(sst_binary_min)
+```
+
+
+Reclassify max SST layer to have 1s only if it is less than 30°C, and 0s otherwise
+```{r}
+# Reclassify matrix for max SST layer
+rcl_matrix_max <- c( -Inf, 30, 1,
+                30, Inf, 0)
+
+# Reclassify max SST layer
+sst_binary_max <- reclassify(max_sst_BRA, rcl = rcl_matrix_max)
+
+# Plot reclassified layer
+plot(sst_binary_max)
+```
+
+Suitable areas
+```{r}
+# Overlay all layers
+suitable <- overlay(sst_binary_min, sst_binary_max, depth_binary, fun = function(x,y,z){x+y+z})
+
+# Plot range
+plot(suitable)
+
+```
+
+
+
+Mask and crop
+```{r}
+# Create mask using eez
+sst_range_masked <- mask(sst_range, mask = eez)
+
+# Crop sst range to Brazil's EEZ extent
+sst_range_cropped <- crop(sst_range_masked, extent(eez))
+
+# Plot and add basemap
+plot(sst_range_cropped)
+map('world', fill = T, add = T, col = 'gray')
+```
+
+
+
+
+
+
