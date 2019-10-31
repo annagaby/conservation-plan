@@ -40,7 +40,7 @@ list_layers()
 
 # Download max and min sst layers
 min <- load_layers("BO_sstmin")
-max <- load_layers("BO_sstmin")
+max <- load_layers("BO_sstmax")
 ```
 Visualize data
 ```{r}
