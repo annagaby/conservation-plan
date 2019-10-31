@@ -1,0 +1,60 @@
+---
+title: "marxan"
+author: "Anna Calle"
+date: "10/31/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Installation
+
+- Download the marxanui R package from http://marxan.net/downloadmui/
+- Install the R package on your computer with a command like this:
+  R CMD INSTALL marxanui_0.1.2.tar.gz
+*Note: need to install package dependencies before installing package
+*Note 2: need to be in the correct folder for command to be successful
+
+```{r}
+# Install R package dependencies
+install.packages("doParallel")
+install.packages("foreach")
+install.packages("foreign")
+install.packages("gplots")
+install.packages("Hmisc")
+install.packages("iptools")
+install.packages("labdsv")
+install.packages("leaflet")
+install.packages("maptools")
+install.packages("PBSmapping")
+install.packages("png")
+install.packages("rgdal")
+install.packages("rgeos")
+install.packages("rhandsontable")
+install.packages("rjson")
+install.packages("shiny")
+install.packages("shinyBS")
+install.packages("sp")
+install.packages("sqldf")
+install.packages("vegan")
+install.packages("xtable")
+```
+
+
+
+
+```{r}
+# Launching the user interfaces from R
+library(marxanui)       # Load the R package
+
+launch_app("import")    # Launch the import app to import your own data
+
+launch_app("marxan")    # Launch the marxan app to run Marxan
+
+launch_app("mxptest")   # Launch the parameter testing app to do BLM, SPF calibration, and target sensitivity testing
+
+launch_app("manage")    # Launch the manage app to manage your datasets
+```
+
