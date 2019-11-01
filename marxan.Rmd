@@ -14,11 +14,13 @@ Installation
 - Download the marxanui R package from http://marxan.net/downloadmui/
 - Install the R package on your computer with a command like this:
   R CMD INSTALL marxanui_0.1.2.tar.gz
-*Note: need to install package dependencies before installing package
-*Note 2: need to be in the correct folder for command to be successful
+*Note: need to install package dependencies (below) before installing package
+*Note: need to run command in the right folder for it to be successful
+- For more information read marxan.io guide (http://marxan.net/downloads/Marxan_io_rev39_user_guide.pdf)
 
 ```{r}
 # Install R package dependencies
+install.packages("doMC") # This package wasn't listed as a dependecy on marxan's website but it is required
 install.packages("doParallel")
 install.packages("foreach")
 install.packages("foreign")
@@ -58,3 +60,11 @@ launch_app("mxptest")   # Launch the parameter testing app to do BLM, SPF calibr
 launch_app("manage")    # Launch the manage app to manage your datasets
 ```
 
+Creating a zip file
+
+Once you have a Marxan dataset, assemble all the required files to prepare them for upload. You need these files:
+- The input.dat input parameter file,
+- The input folder with all the input files,
+- The planning unit layer shapefile files.
+The planning unit shapefile must have a planning unit id field called either: PUID, PU_ID, puid, or pu_id.
+Put all the files in a directory with the name you want for your Marxan database then zip up the directory. This zip file is your Marxan dataset.
