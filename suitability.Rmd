@@ -28,8 +28,12 @@ rcl_mat_depth <- c(-Inf, -100, 0,
 # Reclassify the depth layer
 depth_binary <- reclassify(depth_BRA_res,rcl= rcl_mat_depth)
 
+# Save as shapefile
+writeRaster(depth_binary, paste0(path, "/depth25to100.shp"))
+
 # Plot reclassified layer
 plot(depth_binary)
+
 ```
 
 Reclassify min SST layer to have 1s only if it is above 19°C, and 0s otherwise
