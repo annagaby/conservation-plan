@@ -21,7 +21,6 @@ library(rgeos)
 library(scales)
 library(fasterize)
 library(dismo)
-library(rJava)
 library(maptools)
 library(sdmpredictors)
 library(maps)
@@ -94,6 +93,7 @@ wetlands <-  read_sf(dsn = path,
 
 reefs_artificial <-  read_sf(dsn = path,
                 layer = "Artificial_Reefs")
+
 
 
 ```
@@ -190,16 +190,31 @@ list_layers()
 max_sst <- load_layers("BO_sstmax")
 ```
 
-Visualize SST data
+Download Current Velocity from Bio-Oracle
+```{r}
+# Explore datasets in the package 
+list_datasets() 
+
+# Explore layers in a dataset 
+list_layers() 
+
+# Download max current velocity layers at minimum depth
+max_cv <- load_layers("BO2_curvelmax_bdmin")
+
+```
+
+Visualize Current Velocity Data
 ```{r}
 # Histograms
-hist(min_sst)
-hist(max_sst)
+hist(max_cv)
 
 # Plots
-plot(min_sst)
-plot(max_sst)
+plot(max_cv)
+
 ```
+
+
+
 Cropping SST to eez
 ```{r}
 max_sst_BR <- crop(max_sst, eez)
