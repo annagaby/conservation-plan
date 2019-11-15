@@ -59,7 +59,6 @@ eez <- read_sf(dsn = path,
 # Depth
 depth <- raster(paste0(path,"/gebco_2019_n7.045066_s-35.78779_w-54.58321_e-26.01452.tif"))
 
-
 # Layers to be excluded
 
 # Reefs (marine ecosystems layer)
@@ -102,6 +101,11 @@ ggplot( data = eez_BRA) +
 plot(depth)
 
 hist(depth)
+```
+
+```{r}
+# Boundaries
+plot(bound_BRA$geometry)
 ```
 
 
@@ -193,6 +197,8 @@ min_sst_BR <- crop(min_sst, eez_BRA)
 
 max_sst_BRA <- mask(max_sst_BR, eez_BRA)
 min_sst_BRA <- mask(min_sst_BR, eez_BRA)
+
+plot(max_sst_BRA)
 ```
 
 Cropping depth to eez
@@ -202,6 +208,7 @@ depth_BR <- crop(depth, eez_BRA)
 
 # Mask
 depth_BRA <- mask(depth_BR, eez_BRA)
+beep()
 
 # Resample so it has same resolution as SST layers
 depth_BRA_res <- resample(depth_BRA, min_sst_BRA,method='ngb',progress='text')
@@ -212,22 +219,7 @@ plot(depth_BRA_res)
 
 
 ```{r}
-# function to reproject sf objects (maybe all kinds of objects?) 
-# need them to have same extent, resolution, and projection
-reproject_crop <- function(data){
-  st_transform(data, "+proj=longlat +datum=WGS84 +no_defs") %>% 
-  st_intersection(eez) # maybe if you transform to SpatialPolygonsDataFrame
-}
 
-reproject_crop(reefs)
-
-
-
-reefs <-  st_transform(reefs, "+proj=longlat +datum=WGS84 +no_defs")
-reefs_cropped <- st_intersection(reefs, eez)
-
-aquaculture <- st_transform(aquaculture, "+proj=longlat +datum=WGS84 +no_defs")
-aquaculture_cropped <-crop( aquaculture, eez)
 
 ```
 
