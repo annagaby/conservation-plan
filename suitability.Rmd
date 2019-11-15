@@ -13,7 +13,7 @@ Suitability
 
 - Depth: 25-100m
 - Min sea surface temp: >22°C
-- Max sea surface temp: <30°C
+- Max sea surface temp: <32°C
 
 *Note: run data Rmd first!
 
@@ -53,8 +53,8 @@ plot(sst_binary_min)
 Reclassify max SST layer to have 1s only if it is less than 30°C, and 0s otherwise
 ```{r}
 # Reclassify matrix for max SST layer
-rcl_matrix_max <- c( -Inf, 30, 1,
-                30, Inf, 0)
+rcl_matrix_max <- c( -Inf, 32, 1,
+                32, Inf, 0)
 
 # Reclassify max SST layer
 sst_binary_max <- reclassify(max_sst_BRA, rcl = rcl_matrix_max)

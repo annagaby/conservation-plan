@@ -27,6 +27,7 @@ library(sdmpredictors)
 library(maps)
 library(ncdf4)
 library(marmap)
+library(lwgeom)
 ```
 
 
@@ -53,47 +54,33 @@ path <- paste0(team_path, "My Drive/conservation-plan/data/shapefiles")
 
 # EEZ
 eez <- read_sf(dsn = path,
-                layer = "eez_BRA")
+                layer = "eez_v10")
 
 # Depth
 depth <- raster(paste0(path,"/gebco_2019_n7.045066_s-35.78779_w-54.58321_e-26.01452.tif"))
 
 
-# Reefs
+# Layers to be excluded
+
+# Reefs (marine ecosystems layer)
 reefs <-  read_sf(dsn = path,
-                layer = "reef_500_poly")
+                layer = "apzcm_alvo_ecossistemas_marinhos")
+
+# Artificial reefs
+reefs_artificial <-  read_sf(dsn = path,
+                layer = "Artificial_Reefs")
 
 # MPAs polygons
 mpas <- read_sf(dsn = path,
                 layer = "WDPA_Oct2019_marine-shapefile-polygons")
 
-# MPAs points
-mpas_points <- read_sf(dsn = path,
-                layer = "WDPA_Oct2019_marine-shapefile-points")
-
-# Ports
-ports <- read_sf(dsn = path,
-                layer = "tra_edif_const_portuaria_p")
-
-# Aquaculture
-
-aquaculture <-  read_sf(dsn = path,
-                layer = "Aquaculture")
-
 # No take zones
-
 no_take <-  read_sf(dsn = path,
                 layer = "No_Take_Zone_ACREshp")
 
 # Important wetlands Ramsar
-
 wetlands <-  read_sf(dsn = path,
                 layer = "Important_Wetlands_Ramsar")
-
-# Artificial reefs
-
-reefs_artificial <-  read_sf(dsn = path,
-                layer = "Artificial_Reefs")
 
 
 ```
@@ -101,9 +88,14 @@ reefs_artificial <-  read_sf(dsn = path,
 # Plot data 
 ```{r}
 # EEZ
-ggplot( data = eez) +
+# First filter data for only Brazil
+eez_BRA <- eez %>% 
+  filter(ISO_Ter1=="BRA")
+
+ggplot( data = eez_BRA) +
   geom_sf()
 ```
+
 
 ```{r}
 # Depth
@@ -138,13 +130,6 @@ ggplot( data = ports) +
 ggplot( data = reefs) +
   geom_sf()
 
-```
-
-
-```{r}
-# Aquaculture
-ggplot( data = aquaculture) +
-  geom_sf()
 ```
 
 ```{r}
@@ -186,7 +171,7 @@ list_datasets()
 list_layers() 
 
 # Download max and min sst layers
- min_sst <- load_layers("BO_sstmin")
+min_sst <- load_layers("BO_sstmin")
 max_sst <- load_layers("BO_sstmax")
 ```
 
@@ -200,22 +185,23 @@ hist(max_sst)
 plot(min_sst)
 plot(max_sst)
 ```
+
 Cropping SST to eez
 ```{r}
-max_sst_BR <- crop(max_sst, eez)
-min_sst_BR <- crop(min_sst, eez)
+max_sst_BR <- crop(max_sst, eez_BRA)
+min_sst_BR <- crop(min_sst, eez_BRA)
 
-max_sst_BRA <- mask(max_sst_BR, eez)
-min_sst_BRA <- mask(min_sst_BR, eez)
+max_sst_BRA <- mask(max_sst_BR, eez_BRA)
+min_sst_BRA <- mask(min_sst_BR, eez_BRA)
 ```
 
 Cropping depth to eez
 ```{r}
 # Crop
-depth_BR <- crop(depth, eez)
+depth_BR <- crop(depth, eez_BRA)
 
 # Mask
-depth_BRA <- mask(depth_BR, eez)
+depth_BRA <- mask(depth_BR, eez_BRA)
 
 # Resample so it has same resolution as SST layers
 depth_BRA_res <- resample(depth_BRA, min_sst_BRA,method='ngb',progress='text')
