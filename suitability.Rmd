@@ -28,9 +28,6 @@ rcl_mat_depth <- c(-Inf, -100, 0,
 # Reclassify the depth layer
 depth_binary <- reclassify(depth_BRA_res,rcl= rcl_mat_depth)
 
-# Save as shapefile
-writeRaster(depth_binary, paste0(path, "/depth25to100.shp"))
-
 # Plot reclassified layer
 plot(depth_binary)
 
@@ -63,11 +60,12 @@ sst_binary_max <- reclassify(max_sst_BRA, rcl = rcl_matrix_max)
 plot(sst_binary_max)
 ```
 
+
 Suitable areas
 ```{r}
 # Overlay all layers
 # Note: they all need to have the same extent and resolution
-suitable <- overlay(sst_binary_min, sst_binary_max, depth_binary, fun = function(x,y,z){x+y+z})
+suitable <- overlay(sst_binary_min, sst_binary_max, depth_binary, fun = function(x,y,z){x*y*z})
 
 # Plot suitable areas
 plot(suitable)
@@ -75,6 +73,17 @@ map('world', fill = T, add = T, col = 'gray')
 
 ```
 
+Calculating total area
+```{r}
+# Note: need to fix units and projection
+a <- area(suitable)
+plot(a)
+b <- (suitable * a)
+plot(b)
+freq(b)
+sum(values(b), na.rm = T)
+
+```
 
 
 
