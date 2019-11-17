@@ -56,7 +56,7 @@ res = res(min_sst_BRA)
 r <- raster( extent, resolution = res)
 
 # Rasterize coastline
-r2 <- rasterize(bound_BRA, depth_BRA, 1)
+r2 <- rasterize(bound_BRA, r, 1)
 
 # plot
 plot(r2)
@@ -64,6 +64,14 @@ plot(r2)
 # Calculate distance to nearest non-NA pixel
 d <- distance(r2)
 beep()
+
+# Export the raster
+writeRaster(x = d, filename = paste0(path,"/dist_shore.tif"), overwrite = F)
+
+plot(d)
+
+
+# Make land NAs
 
 
 ```
