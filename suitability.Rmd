@@ -14,6 +14,7 @@ Suitability
 - Depth: 25-100m
 - Min sea surface temp: >22°C
 - Max sea surface temp: <32°C
+- Distance to shore: <25 nm
 
 *Note: run data Rmd first!
 
@@ -60,20 +61,146 @@ sst_binary_max <- reclassify(max_sst_BRA, rcl = rcl_matrix_max)
 plot(sst_binary_max)
 ```
 
+Reclassify distance to shore layer to have 1s only if it is less than 25nm, and 0s otherwise
+```{r}
+# Reclassify matrix for distance to shore layer
+rcl_matrix_dist_shore <- c( -Inf, 0, 0,
+                            0, 46300, 1,
+                            46300, Inf, 0)
 
-Suitable areas
+# Reclassify distance to shore layer
+dist_shore_binary <- reclassify(d, rcl = rcl_matrix_dist_shore)
+
+# Plot reclassified layer
+plot(dist_shore_binary)
+```
+
+
+MPAS
+```{r}
+# Rasterize mpas
+extent<-extent(eez_BRA)
+res = res(min_sst_BRA)
+
+plot(mpas_BR$geometry)
+
+r <- raster( extent, resolution = res)
+
+r_mpas <- rasterize(mpas_BR, r, field = 0, background = 1) # name: include binary
+
+plot(r_mpas)
+freq(r_mpas)
+
+```
+
+Artificial reefs
+```{r}
+# Get rid of z-dimension
+reefs_artificial <- st_zm(reefs_artificial, drop = TRUE, what = "ZM")
+
+# reproject
+crs <- crs(mpas_BR)
+st_transform(reefs_artificial, crs)
+
+# transform polygon into lines
+reefs_artificial_m <- st_cast(reefs_artificial, "MULTILINESTRING")
+plot(reefs_artificial_m)
+
+# Rasterize artificial reefs
+r_reefs_artificial <- rasterize(reefs_artificial, r, field= 0 , background = 1)
+
+plot(r_reefs_artificial)
+plot(reefs_artificial$geometry)
+freq(r_reefs_artificial)
+
+```
+
+No take zones
+```{r}
+# Rasterize no take zones
+r_no_take <- rasterize(no_take, r, 0)
+
+plot(r_no_take)
+freq(r_no_take)
+
+r_no_take[is.na(r_no_take)] <- 1
+
+```
+
+Wetlands
+```{r}
+# Get rid of z-dimension
+wetlands <- st_zm(wetlands, drop = TRUE, what = "ZM")
+
+# Rasterize no take zones
+r_wetlands <- rasterize(wetlands, r, 0)
+
+plot(r_wetlands)
+freq(r_wetlands)
+
+r_wetlands[is.na(r_wetlands)] <- 1
+```
+
+Reefs (Marine Ecosystems)
+```{r}
+# Get rid of z-dimension
+reefs <- st_zm(reefs, drop = TRUE, what = "ZM")
+
+# Rasterize reefs
+r_reefs <- rasterize(reefs, r, 0)
+
+plot(r_reefs)
+freq(r_reefs)
+
+r_reefs[is.na(r_reefs)] <- 1
+```
+
+
+Suitable areas (Multiplicative)
 ```{r}
 # Overlay all layers
 # Note: they all need to have the same extent and resolution
-suitable <- overlay(sst_binary_min, sst_binary_max, depth_binary, fun = function(x,y,z){x*y*z})
+# Change extent distance to shore 
+dist_shore_binary <- setExtent( dist_shore_binary, ext = sst_binary_min)
+r_mpas <- setExtent( r_mpas, ext = sst_binary_min)
+
+# Overlay
+suitable <- overlay(sst_binary_min, sst_binary_max, depth_binary, dist_shore_binary, r_mpas, fun = function(v,w,x,y,z){v*w*x*y*z})
 
 # Plot suitable areas
 plot(suitable)
 map('world', fill = T, add = T, col = 'gray')
+```
+
+Suitable areas (Additive)
+```{r}
+# Overlay all layers
+# Note: they all need to have the same extent and resolution
+suitable_2 <- overlay(sst_binary_min, sst_binary_max, depth_binary, dist_shore_binary, r_mpas, fun = function(v,w,x,y,z){v+w+x+y+z})
+
+# Plot suitable areas
+plot(suitable_2)
+map('world', fill = T, add = T, col = 'gray')
+freq(suitable_2)
 
 ```
 
-Calculating total area
+
+Save raster
+```{r}
+freq(suitable) #474 cells
+
+writeRaster(x = suitable, filename = paste0(path,"/suitable.tif"), overwrite = F)
+
+# reproject to epsg: 5880 and save
+suitable_reprojected <- projectRaster( suitable, crs = "+proj=aea +lat_1=-2 +lat_2=-22 +lat_0=-12 +lon_0=-54 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+
+writeRaster(x = suitable_reprojected, filename = paste0(path,"/suitable_epsg5880.tif"), overwrite = F)
+
+```
+
+
+Total suitable area calculation
 ```{r}
 # Note: need to fix units and projection
 a <- area(suitable)
@@ -82,9 +209,6 @@ b <- (suitable * a)
 plot(b)
 freq(b)
 sum(values(b), na.rm = T)
-
-```
-
 
 
 
