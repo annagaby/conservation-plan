@@ -1,0 +1,262 @@
+---
+title: "data_cp"
+author: "Anna Calle"
+date: "10/24/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load packages
+library(tidyverse)
+library(sf)
+library(sp)
+library(rgdal)
+library(raster)
+library(dplyr)
+library(rgeos)
+library(scales)
+library(fasterize)
+library(dismo)
+library(maptools)
+library(sdmpredictors)
+library(maps)
+library(ncdf4)
+library(marmap)
+library(lwgeom)
+library(rmapshaper)
+library(rnaturalearth)
+```
+
+Setup for downloading data using drive file stream
+```{r}
+# Create root based on OS
+if(Sys.info()["sysname"] == "Windows"){
+  team_path <- "G:/"
+} else {
+  team_path <- "/Volumes/GoogleDrive/"
+}
+
+#Create full file path
+path <- paste0(team_path, "My Drive/conservation-plan/data/shapefiles")
+
+```
+
+Exclusive Economic Zone (EEZ)
+```{r}
+# Read in global EEZ shapefile
+eez <- read_sf(dsn = path,
+                layer = "eez_v10")
+
+# Assign projection: SIRGAS 2000 / Brazil Polyconic
+crs_BRA <- "+proj=poly +lat_0=0 +lon_0=-54 +x_0=5000000 +y_0=10000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+
+# Filter data for Brazil and reproject 
+eez_BRA <- eez %>% 
+  filter(ISO_Ter1=="BRA") %>% 
+  st_transform(crs = crs_BRA)
+
+```
+
+Sea Surface Temperature
+```{r}
+# Explore datasets in the 'sdmpredictors' package 
+# list_datasets() 
+
+# Explore layers in a dataset 
+# list_layers() 
+
+# Download max and min sst layers
+min_sst <- load_layers("BO_sstmin")
+max_sst <- load_layers("BO_sstmax")
+
+# Reproject
+max_sst_proj <- projectRaster(max_sst, crs = crs_BRA)
+min_sst_proj <- projectRaster(min_sst, crs = crs_BRA)
+
+# Crop to EEZ
+max_sst_crop <- crop(max_sst_proj, eez_BRA)
+min_sst_crop <- crop(min_sst_proj, eez_BRA)
+
+# Mask
+max_sst_mask <- mask(max_sst_crop, eez_BRA)
+min_sst_mask <- mask(min_sst_crop, eez_BRA)
+
+# Plot
+plot(max_sst_mask)
+plot(min_sst_mask)
+
+# Export raster
+writeRaster(x = max_sst_mask, filename = paste0(path,"/max_sst_mask.tif"), overwrite = T)
+writeRaster(x = min_sst_mask, filename = paste0(path,"/min_sst_mask.tif"), overwrite = T)
+
+```
+
+Current Velocity
+```{r}
+# Download max current velocity layers at minimum depth
+max_cv <- load_layers("BO2_curvelmax_bdmin")
+
+# Reproject
+max_cv_proj <- projectRaster(max_cv, crs = crs_BRA)
+
+# Crop to EEZ
+max_cv_crop <- crop(max_cv_proj, eez_BRA)
+
+# Mask
+max_cv_mask <- mask(max_cv_crop, eez_BRA)
+
+# Plot
+plot(max_cv_mask)
+
+# Export raster
+writeRaster(x = max_cv_mask, filename = paste0(path,"/max_cv_mask.tif"), overwrite = T)
+
+```
+
+Depth
+```{r}
+# Read in data
+depth <- raster(paste0(path,"/gebco_2019_n7.045066_s-35.78779_w-54.58321_e-26.01452.tif"))
+
+# Reproject
+depth_proj <- projectRaster(depth, crs = crs_BRA)
+
+# Resample so it has same resolution as SST layers
+depth_resample <- resample(depth_proj, min_sst_mask,method='ngb',progress='text')
+
+# Crop
+depth_crop <- crop(depth_resample, eez_BRA)
+
+# Mask
+depth_mask <- mask(depth_crop, eez_BRA)
+
+# Plot
+plot(depth_mask)
+
+# Export raster
+writeRaster(x = depth_mask, filename = paste0(path,"/depth_mask.tif"), overwrite = T)
+```
+
+Empty raster
+```{r}
+# Reclassification matrix for empty raster
+rcl_mat_r <- c(-Inf, Inf, 0)
+
+# Reclassify the depth layer to make it an empty raster
+empty_raster <- reclassify(depth_mask, rcl= rcl_mat_r)
+
+# Export empty raster
+writeRaster(x = empty_raster, filename = paste0(path,"/empty_raster.tif"), overwrite = T)
+
+```
+
+
+Distance to shore
+```{r}
+# Import the limits of Brazil #110, 50, or 10 meters for scale (resolution)
+bound_BRA <- ne_countries(scale = 110, country = "Brazil", returnclass = "sf") %>%
+  st_transform(crs_BRA) %>% 
+  sf::st_crop(eez_BRA)
+
+# Rasterize coastline
+coastline_raster <- rasterize(bound_BRA, empty_raster, field = 1)
+
+# Calculate distance to nearest non-NA pixel
+dist_shore <- distance(coastline_raster)
+
+# Plot
+plot(dist_shore)
+
+# Export raster
+writeRaster(x = dist_shore, filename = paste0(path,"/dist_shore.tif"), overwrite = T)
+```
+
+# MPAs
+```{r}
+# Read in layer and reproject
+mpas <- read_sf(dsn = path,
+                layer = "WDPA_Oct2019_marine-shapefile-polygons")
+
+# Filter data only for Brazil and reproject
+mpas_BR <- mpas %>% 
+  filter(ISO3 == "BRA") %>%
+  st_transform( crs_BRA)
+
+# Rasterize and mask
+mpas_binary <- rasterize(mpas_BR, empty_raster, field = 0, background = 1) %>% 
+  mask(eez_BRA)
+
+# Export
+writeRaster(x = mpas_binary, filename = paste0(path,"/mpas_binary.tif"), overwrite = T)
+```
+
+# Artificial reefs
+```{r}
+# Read in layer, reproject, and drop z dimension
+reefs_artificial <-  read_sf(dsn = path,
+                layer = "Artificial_Reefs") %>% 
+  st_transform(crs = crs_BRA) %>%
+  st_zm(drop = TRUE, what = "ZM")
+
+# Rasterize artificial reefs
+reefs_artificial_binary <- rasterize(reefs_artificial, empty_raster, field = 0, background = 1) %>%
+  mask(eez_BRA)
+
+# Export
+writeRaster(x = reefs_artificial_binary, filename = paste0(path,"/reefs_artificial_binary.tif"), overwrite = T)
+```
+
+# Reefs (marine ecosystems layer)
+```{r}
+# Read in layer, reproject, and drop z dimension
+reefs <-  read_sf(dsn = path,
+                layer = "apzcm_alvo_ecossistemas_marinhos") %>% 
+  st_transform(crs = crs_BRA) %>%
+  st_zm(drop = TRUE, what = "ZM")
+
+# Rasterize reefs
+reefs_binary <- rasterize(reefs, empty_raster, field = 0, background = 1) %>% 
+  mask(eez_BRA)
+ 
+# Export
+writeRaster(x = reefs_binary, filename = paste0(path,"/reefs_binary.tif"), overwrite = T)
+```
+
+# Important wetlands Ramsar
+```{r}
+# Read in layer, reproject, and drop z dimension
+wetlands <-  read_sf(dsn = path,
+                layer = "Important_Wetlands_Ramsar") %>% 
+  st_transform(crs = crs_BRA)  %>%
+  st_zm(drop = TRUE, what = "ZM")
+
+# Rasterize wetlands
+wetlands_binary <- rasterize(wetlands, empty_raster, field = 0, background = 1)%>% 
+  mask(eez_BRA)
+
+# Export
+writeRaster(x = wetlands_binary, filename = paste0(path,"/wetlands_binary.tif"), overwrite = T)
+
+```
+
+# No take zones
+```{r}
+# Read in layer, reproject, and drop z dimension
+no_take <-  read_sf(dsn = path,
+                layer = "No_Take_Zone_ACREshp") %>% 
+  st_transform(crs = crs_BRA) %>%
+  st_zm(drop = TRUE, what = "ZM")
+
+# Rasterize no take zones
+no_take_binary <- rasterize(no_take, empty_raster, field = 0, background = 1) %>% 
+  mask(eez_BRA)
+ 
+# Export
+writeRaster(x = no_take_binary, filename = paste0(path,"/no_take_binary.tif"), overwrite = T)
+
+```
+
