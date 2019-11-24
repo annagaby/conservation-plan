@@ -165,8 +165,9 @@ bound_BRA <- ne_countries(scale = 110, country = "Brazil", returnclass = "sf") %
 # Rasterize coastline
 coastline_raster <- rasterize(bound_BRA, empty_raster, field = 1)
 
-# Calculate distance to nearest non-NA pixel
-dist_shore <- distance(coastline_raster)
+# Calculate distance to nearest non-NA pixel and mask to EEZ
+dist_shore <- distance(coastline_raster) %>% 
+  mask(eez_BRA)
 
 # Plot
 plot(dist_shore)
