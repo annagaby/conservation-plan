@@ -23,6 +23,47 @@ Suitability
 - MPAs
 - *No take zones made no difference
 
+```{r}
+# Load packages
+library(tidyverse)
+library(sf)
+library(sp)
+library(rgdal)
+library(raster)
+library(dplyr)
+library(rgeos)
+library(scales)
+library(fasterize)
+library(dismo)
+library(maptools)
+library(sdmpredictors)
+library(maps)
+library(ncdf4)
+library(marmap)
+library(lwgeom)
+library(rmapshaper)
+library(rnaturalearth)
+```
+
+Setup for downloading data using drive file stream
+```{r}
+# Create root based on OS
+if(Sys.info()["sysname"] == "Windows"){
+  team_path <- "G:/"
+} else {
+  team_path <- "/Volumes/GoogleDrive/"
+}
+
+#Create full file path
+path <- paste0(team_path, "My Drive/conservation-plan/data/shapefiles")
+
+# Assign projection: SIRGAS 2000 / Brazil Polyconic
+# In https://www.spatialreference.org it is called SR-ORG:6687
+crs_BRA <- "+proj=poly +lat_0=0 +lon_0=-54 +x_0=5000000 +y_0=10000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+
+```
+
+
 Defining variables
 ```{r}
 min_depth <- -25
@@ -128,7 +169,7 @@ plot(reefs_artificial_binary)
 Reefs
 ```{r}
 # Read in file
-reefs_artificial_binary <- raster(paste0(path,"/reefs_artificial_binary.tif"))
+reefs_binary <- raster(paste0(path,"/reefs_artificial_binary.tif"))
 
 # Plot
 plot(reefs_binary)
@@ -138,7 +179,7 @@ plot(reefs_binary)
 Wetlands
 ```{r}
 # Read in file
-reefs_artificial_binary <- raster(paste0(path,"/reefs_artificial_binary.tif"))
+wetlands_binary <- raster(paste0(path,"/reefs_artificial_binary.tif"))
 
 # Plot
 plot(wetlands_binary)
@@ -162,19 +203,23 @@ Suitable areas (Multiplicative)
 # Change extent distance to shore 
 
 # Overlay
-suitable <- overlay(sst_binary_min, sst_binary_max, depth_binary, mpas_binary, wetlands_binary, reefs_binary, reefs_artificial_binary, no_take_binary, dist_shore_binary, fun = function(a,b,c,d,e,f,g,h,i){a*b*c*d*e*f*g*h*i})
+suitable <- overlay(depth_binary, mpas_binary, wetlands_binary, reefs_binary, reefs_artificial_binary, no_take_binary, dist_shore_binary, fun = function(a,b,c,d,e,f,g){a*b*c*d*e*f*g})
 
 # Plot suitable areas
 plot(suitable)
 map('world', fill = T, add = T, col = 'gray')
-# 224 suitable cells!
+freq(suitable)
+# 643 suitable cells!
+
+# Save raster
+writeRaster(x = suitable, filename = paste0(path,"/suitable.tif"), overwrite = T)
 ```
 
 Suitable areas (Additive)
 ```{r}
 # Overlay all layers
 # Note: they all need to have the same extent and resolution
-suitable_2 <- overlay(sst_binary_min, sst_binary_max, depth_binary, mpas_binary, wetlands_binary, reefs_binary, reefs_artificial_binary, no_take_binary, dist_shore_binary, fun = function(a,b,c,d,e,f,g,h,i){a+b+c+d+e+f+g+h+i})
+suitable_2 <- overlay(depth_binary, mpas_binary, wetlands_binary, reefs_binary, reefs_artificial_binary, no_take_binary, dist_shore_binary, fun = function(a,b,c,d,e,f,g){a+b+c+d+e+f+g})
 
 # Plot suitable areas
 plot(suitable_2)
@@ -182,16 +227,34 @@ map('world', fill = T, add = T, col = 'gray')
 
 ```
 
-
-Save raster
+Finalized graph
 ```{r}
-writeRaster(x = suitable, filename = paste0(path,"/suitable.tif"), overwrite = T)
+# Convert suitable raster to dataframe
+suitable_df <- as.data.frame(suitable, xy = T) %>% 
+  mutate(suitable= case_when(
+    layer == 1 ~ "Suitable",
+    layer != 1 ~ "Not Suitable"
+  ))
+# Create finalized graph
+suitable_graph <- ggplot() +
+    geom_raster(data = suitable_df,
+                mapping = aes(x = x, y = y, fill = suitable)) +
+  scale_fill_manual(
+    name = "", # Gives an empty title for the legend
+    labels = c("Not Suitable", "Suitable", ""),
+    values = c("lightblue1", "orange")) +
+    geom_sf(data = bound_BRA) +
+  theme_void() +
+  theme(panel.grid.major = element_line(color = "white"))
+### Additional code we could use
+# To add EEZ outline:
+# geom_sf(data = eez_BRA, fill = "transparent")
+# To add titles and subtitles:
+# labs(title = "Title",
+# subtitle = "Subtitle",
+# x = "x lab", y = "y lab")
 
-# reproject to epsg: 5880 and save
-suitable_reprojected <- projectRaster( suitable, crs = "+proj=aea +lat_1=-2 +lat_2=-22 +lat_0=-12 +lon_0=-54 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
-
-writeRaster(x = suitable_reprojected, filename = paste0(path,"/suitable_epsg5880.tif"), overwrite = T)
-
+suitable_graph
 ```
 
 
@@ -207,7 +270,7 @@ sum(values(b), na.rm = T)
 
 ```{r}
 # Sanity check --> check area of EEZ
-eez_r <- rasterize(eez_BRA, r, field = 1, background = 0)
+eez_r <- rasterize(eez_BRA, empty_raster, field = 1, background = 0)
 
 a_eez <- area(eez_r)
 plot(a_eez)
@@ -218,5 +281,6 @@ freq(b_eez)
 
 sum(values(b_eez), na.rm = T)
 ```
+
 
 
