@@ -27,21 +27,6 @@ Suitability
 # Load packages
 library(tidyverse)
 library(sf)
-library(sp)
-library(rgdal)
-library(raster)
-library(dplyr)
-library(rgeos)
-library(scales)
-library(fasterize)
-library(dismo)
-library(maptools)
-library(sdmpredictors)
-library(maps)
-library(ncdf4)
-library(marmap)
-library(lwgeom)
-library(rmapshaper)
 library(rnaturalearth)
 ```
 
@@ -207,7 +192,6 @@ suitable <- overlay(depth_binary, mpas_binary, wetlands_binary, reefs_binary, re
 
 # Plot suitable areas
 plot(suitable)
-map('world', fill = T, add = T, col = 'gray')
 freq(suitable)
 # 643 suitable cells!
 
@@ -223,8 +207,6 @@ suitable_2 <- overlay(depth_binary, mpas_binary, wetlands_binary, reefs_binary, 
 
 # Plot suitable areas
 plot(suitable_2)
-map('world', fill = T, add = T, col = 'gray')
-
 ```
 
 Finalized graph
@@ -235,6 +217,16 @@ suitable_df <- as.data.frame(suitable, xy = T) %>%
     layer == 1 ~ "Suitable",
     layer != 1 ~ "Not Suitable"
   ))
+
+# Read in Brazil's EEZ
+eez_BRA <- read_sf(dsn = path,
+                layer = "eez_BRA")
+
+# Brazil's outline in correct projection and cropped to the EEZ's extent
+bound_BRA <- ne_countries(scale = 50, country = "Brazil", returnclass = "sf") %>%
+  st_transform(crs_BRA) %>% 
+  sf::st_crop( bound_BRA, y = extent(eez_BRA))
+
 # Create finalized graph
 suitable_graph <- ggplot() +
     geom_raster(data = suitable_df,
@@ -270,6 +262,8 @@ sum(values(b), na.rm = T)
 
 ```{r}
 # Sanity check --> check area of EEZ
+empty_raster <- raster(paste0(path,"/empty_raster.tif"))
+
 eez_r <- rasterize(eez_BRA, empty_raster, field = 1, background = 0)
 
 a_eez <- area(eez_r)
