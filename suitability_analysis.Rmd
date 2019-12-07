@@ -257,7 +257,7 @@ plot(a)
 b <- (suitable * a)
 plot(b)
 
-sum(values(b), na.rm = T)
+sum(values(b), na.rm = T) #79361632000 m2 or 79,361.632 km2 or 49,312 mi # for optimal 5,000 mi2
 ```
 
 ```{r}

@@ -51,13 +51,13 @@ install.packages("xtable")
 # Launching the user interfaces from R
 library(marxanui)       # Load the R package
 
-launch_app("import")    # Launch the import app to import your own data
+launch_app("import")   # Launch the import app to import your own data
 
 launch_app("marxan")    # Launch the marxan app to run Marxan
 
 launch_app("mxptest")   # Launch the parameter testing app to do BLM, SPF calibration, and target sensitivity testing
 
-launch_app("manage")    # Launch the manage app to manage your datasets
+launch_app("manage")   # Launch the manage app to manage your datasets
 ```
 
 Creating a zip file

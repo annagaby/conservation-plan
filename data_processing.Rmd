@@ -52,6 +52,7 @@ eez <- read_sf(dsn = path,
                 layer = "eez_v10")
 
 # Assign projection: SIRGAS 2000 / Brazil Polyconic
+# In https://www.spatialreference.org it is called SR-ORG:6687
 crs_BRA <- "+proj=poly +lat_0=0 +lon_0=-54 +x_0=5000000 +y_0=10000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
 
 # Filter data for Brazil and reproject 
@@ -166,7 +167,7 @@ bound_BRA <- ne_countries(scale = 110, country = "Brazil", returnclass = "sf") %
 coastline_raster <- rasterize(bound_BRA, empty_raster, field = 1)
 
 # Calculate distance to nearest non-NA pixel and mask to EEZ
-dist_shore <- distance(coastline_raster) %>% 
+dist_shore <- distance(coastline_raster)%>% 
   mask(eez_BRA)
 
 # Plot
@@ -191,6 +192,9 @@ mpas_BR <- mpas %>%
 mpas_binary <- rasterize(mpas_BR, empty_raster, field = 0, background = 1) %>% 
   mask(eez_BRA)
 
+# Plot
+plot(mpas_binary)
+
 # Export
 writeRaster(x = mpas_binary, filename = paste0(path,"/mpas_binary.tif"), overwrite = T)
 ```
@@ -207,6 +211,9 @@ reefs_artificial <-  read_sf(dsn = path,
 reefs_artificial_binary <- rasterize(reefs_artificial, empty_raster, field = 0, background = 1) %>%
   mask(eez_BRA)
 
+# Plot
+plot(reefs_artificial_binary)
+
 # Export
 writeRaster(x = reefs_artificial_binary, filename = paste0(path,"/reefs_artificial_binary.tif"), overwrite = T)
 ```
@@ -222,6 +229,9 @@ reefs <-  read_sf(dsn = path,
 # Rasterize reefs
 reefs_binary <- rasterize(reefs, empty_raster, field = 0, background = 1) %>% 
   mask(eez_BRA)
+
+# Plot
+plot(reefs_binary)
  
 # Export
 writeRaster(x = reefs_binary, filename = paste0(path,"/reefs_binary.tif"), overwrite = T)
@@ -239,6 +249,9 @@ wetlands <-  read_sf(dsn = path,
 wetlands_binary <- rasterize(wetlands, empty_raster, field = 0, background = 1)%>% 
   mask(eez_BRA)
 
+# Plot
+plot(wetlands_binary)
+
 # Export
 writeRaster(x = wetlands_binary, filename = paste0(path,"/wetlands_binary.tif"), overwrite = T)
 
@@ -255,6 +268,9 @@ no_take <-  read_sf(dsn = path,
 # Rasterize no take zones
 no_take_binary <- rasterize(no_take, empty_raster, field = 0, background = 1) %>% 
   mask(eez_BRA)
+
+# Plot
+plot(no_take_binary)
  
 # Export
 writeRaster(x = no_take_binary, filename = paste0(path,"/no_take_binary.tif"), overwrite = T)
